@@ -3,6 +3,7 @@ import { Task } from '../models/task.js';
 import logger from '../logs/logger.js';
 import { Status } from '../constants/index.js';
 import { encriptar } from '../common/bcrypt.js';
+import { Op } from 'sequelize';
 async function getUsers(req, res, next) {
    try{
     const users = await User.findAll({
@@ -150,6 +151,48 @@ async function getTasks(req, res, next){
     }
 }
 
+async function getUsersWithPagination(req, res) {
+    try{
+        const {
+          page = 1,
+          limit = 10,
+          search = '',
+          orderBy = 'id',
+          orderDir = 'DESC'
+        } = req.query;
+
+        const validOrderBy = ['id', 'username', 'status'];
+        const validOrderDir = ['ASC', 'DESC'];
+
+        const offset = (page - 1) * limit;
+
+        const orderColumn = validOrderBy.includes(orderBy) ? orderBy : 'id';
+        const direction = validOrderDir.includes(orderDir.toUpperCase()) ? orderDir.toUpperCase() : 'DESC';
+
+        const whereClause = search
+          ? { username: { [Op.iLike]: `%${search}%` } }
+          : {};
+
+        const { count: total, rows: data } = await User.findAndCountAll({
+          where: whereClause,
+          order: [[orderColumn, direction]],
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+        });
+
+        res.json({
+          total,
+          page: parseInt(page),
+          pages: Math.ceil(total / limit),
+          data,
+        });
+    } catch{error}{
+        res.status(500).json({ message: 'Error en el serviodor'})
+    }
+}
+
+
+
 export default{
     getUsers,
     createUser,
@@ -157,5 +200,6 @@ export default{
     updateUser,
     deleteUser,
     activateInactive,
-    getTasks
+    getTasks,
+    getUsersWithPagination
 };
