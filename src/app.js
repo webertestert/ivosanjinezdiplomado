@@ -1,7 +1,12 @@
 import express from 'express';
-
+import cors from 'cors';
 const app = express();
-
+app.use(
+  cors({
+    origin: ['*','https://isanjinez.github.io'],
+    credentials: true,
+  })
+);
 //imprt routes
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
